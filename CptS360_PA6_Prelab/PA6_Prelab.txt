@@ -1,0 +1,178 @@
+/*********************************** super.c code **************************************************
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <ext2fs/ext2_fs.h>
+
+#define BLKSIZE 1024
+
+// define shorter TYPES, save typing efforts
+typedef unsigned char  u8;
+typedef unsigned short u16;
+typedef unsigned int   u32;
+typedef struct ext2_group_desc  GD;
+typedef struct ext2_super_block SUPER;
+typedef struct ext2_inode       INODE;
+typedef struct ext2_dir_entry_2 DIR;    // need this for new version of e2fs 
+
+int _fd;
+char _buf[BLKSIZE];
+char * _disk = "mydisk";
+
+GD    * _gp;
+SUPER * _sp;
+INODE * _ip;
+DIR   * _dp;
+
+int get_block(int fd, int blk, char buf[])
+{
+  lseek(_fd, (long)blk*BLKSIZE, 0);
+  read(_fd, buf, BLKSIZE);
+}
+
+void super()
+{
+  // read SUPER block
+  get_block(_fd, 1, _buf);  
+  _sp = (SUPER *)_buf;
+
+  // check for EXT2 magic number:
+  printf("s_magic = %x\n", _sp->s_magic);
+  if (_sp->s_magic != 0xEF53)
+  {
+    printf("NOT an EXT2 FS\n");
+    exit(1);
+  }
+
+  printf("EXT2 FS OK\n\n");
+  printf("s_inodes_count = %d\n", _sp->s_inodes_count);
+  printf("s_blocks_count = %d\n", _sp->s_blocks_count);
+  printf("s_free_inodes_count = %d\n", _sp->s_free_inodes_count);
+  printf("s_free_blocks_count = %d\n", _sp->s_free_blocks_count);
+  printf("s_first_data_block = %d\n", _sp->s_first_data_block);
+  printf("s_log_block_size = %d\n", _sp->s_log_block_size);
+  printf("s_blocks_per_group = %d\n", _sp->s_blocks_per_group);
+  printf("s_inodes_per_group = %d\n", _sp->s_inodes_per_group);
+  printf("s_mnt_count = %d\n", _sp->s_mnt_count);
+  printf("s_max_mnt_count = %d\n", _sp->s_max_mnt_count);
+  printf("s_magic = %x\n", _sp->s_magic);
+  printf("s_mtime = %s", ctime(&_sp->s_mtime));
+  printf("s_wtime = %s", ctime(&_sp->s_wtime));
+}
+
+main(int argc, char *argv[ ])
+
+{ 
+  if (argc > 1)
+    _disk = argv[1];
+    
+  _fd = open(_disk, O_RDONLY);
+  
+  if (_fd < 0)
+  {
+    printf("open failed\n");
+    exit(1);
+  }
+
+  super();
+}
+
+//************************************Super.c Results***********************************************
+s_magic = ef53
+EXT2 FS OK
+
+s_inodes_count = 184
+s_blocks_count = 1440
+s_free_inodes_count = 174
+s_free_blocks_count = 1405
+s_first_data_block = 1
+s_log_block_size = 0
+s_blocks_per_group = 8192
+s_inodes_per_group = 184
+s_mnt_count = 1
+s_max_mnt_count = -1
+s_magic = ef53
+s_mtime = Wed Mar 21 14:59:17 2018
+s_wtime = Wed Mar 21 16:55:28 2018
+
+/************************************ gd.c code ****************************************************
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <ext2fs/ext2_fs.h>
+
+#define BLKSIZE 1024
+
+// define shorter TYPES, save typing efforts
+typedef unsigned char  u8;
+typedef unsigned short u16;
+typedef unsigned int   u32;
+typedef struct ext2_group_desc  GD;
+typedef struct ext2_super_block SUPER;
+typedef struct ext2_inode       INODE;
+typedef struct ext2_dir_entry_2 DIR;    // need this for new version of e2fs 
+
+int _fd;
+char _buf[BLKSIZE];
+char * _disk = "mydisk";
+
+GD    * _gp;
+SUPER * _sp;
+INODE * _ip;
+DIR   * _dp;
+
+int get_block(int fd, int blk, char buf[])
+{
+  lseek(_fd, (long)blk*BLKSIZE, 0);
+  read(_fd, buf, BLKSIZE);
+}
+
+void gd()
+{
+  // read GD0 block
+  get_block(_fd, 2, _buf);  
+  _gp = (GD *)_buf;
+  
+  if(!_gp)
+  {
+  	printf("Group Descirptor Block could not be read.\n");
+  	exit(1);
+  }
+	
+	printf("Group Descirptor Block read successfully\n\n");
+  printf("Printing GD0 Information:\n");
+  printf("bg_block_bitmap = %d\n", _gp->bg_block_bitmap);
+  printf("bg_inode_bitmap = %d\n", _gp->bg_inode_bitmap);
+  printf("bg_inode_table = %d\n", _gp->bg_inode_table);
+  printf("bg_free_blocks_count = %d\n", _gp->bg_free_blocks_count);
+  printf("bg_free_inodes_count= %d\n", _gp->bg_free_inodes_count);
+  printf("bg_used_dirs_count = %d\n", _gp->bg_used_dirs_count);
+}
+
+main(int argc, char *argv[ ])
+
+{ 
+  if (argc > 1)
+    _disk = argv[1];
+    
+  _fd = open(_disk, O_RDONLY);
+  
+  if (_fd < 0)
+  {
+    printf("open failed\n");
+    exit(1);
+  }
+
+  gd();
+}
+
+//************************************GD.c Results *************************************************
+Group Descirptor Block read successfully
+
+Printing GD0 Information:
+bg_block_bitmap = 8
+bg_inode_bitmap = 9
+bg_inode_table = 10
+bg_free_blocks_count = 1405
+bg_free_inodes_count= 174
+bg_used_dirs_count = 1
